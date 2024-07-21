@@ -338,7 +338,7 @@
 
         function seleccionarAleatorio() {
             var randomLugar = todosLosLugares[Math.floor(Math.random() * todosLosLugares.length)];
-            map.setView(randomLugar.coordenadas, 14);
+            map.setView(randomLugar.coordenadas, 12);
             markers.forEach(marker => {
                 if (marker.getLatLng().lat === randomLugar.coordenadas[0] && marker.getLatLng().lng === randomLugar.coordenadas[1]) {
                     marker.openPopup();
