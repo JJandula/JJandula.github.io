@@ -48,6 +48,28 @@
             background-color: #007BFF;
             color: white;
         }
+        .random-button-container {
+            display: flex;
+            justify-content: center;
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000; /* Para asegurarte de que el botón esté sobre el mapa */
+        }
+        .random-button-container button {
+            padding: 10px 20px;
+            border-radius: 20px;
+            border: 2px solid #ccc;
+            font-size: 16px;
+            background-color: white;
+            cursor: pointer;
+            margin: 0 5px;
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+        .random-button-container button:hover {
+            background-color: #f0f0f0;
+        }
     </style>
 </head>
 <body>
@@ -55,7 +77,9 @@
         <button id="btn-todos" onclick="filtrarPuntos('todos')">Todos</button>
         <button id="btn-montana" onclick="filtrarPuntos('montana')">Montaña</button>
         <button id="btn-playa" onclick="filtrarPuntos('playa')">Playa</button>
-        <button id="btn-random" onclick="mostrarUbicacionAleatoria()">Random</button>
+    </div>
+    <div class="random-button-container">
+        <button id="btn-random" onclick="seleccionarAleatorio()">No se Button</button>
     </div>
     <div id="map"></div>
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -265,7 +289,7 @@
           ubicacion:
             "https://www.google.es/maps/dir//Playa+y+Bajas+de+la+Zamora,+38749/@28.5154082,-17.9161553,13z/data=!4m9!4m8!1m0!1m5!1m1!1s0xc6b8dbfd902c979:0x7976672c612329f8!2m2!1d-17.8749555!2d28.515339!3e0?entry=ttu",
         },
-        ];
+      ];
 
         var markers = [];
 
@@ -312,7 +336,7 @@
             agregarMarcadores(filtro);
         }
 
-        function mostrarUbicacionAleatoria() {
+        function seleccionarAleatorio() {
             var randomLugar = todosLosLugares[Math.floor(Math.random() * todosLosLugares.length)];
             map.setView(randomLugar.coordenadas, 14);
             markers.forEach(marker => {
