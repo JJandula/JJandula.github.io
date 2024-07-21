@@ -5,39 +5,93 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Mapa Interactivo de La Palma</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="icon" href="favicon.ico" type="image/x-icon" />
     <style>
         #map {
             height: 100vh;
             width: 100%;
         }
         .leaflet-popup-content {
-            width: 300px; /* Ancho del pop-up */
-            height: auto; /* Altura del pop-up */
+            width: 300px;
+            height: auto;
         }
         .popup-image {
-            width: 100%; /* Ajusta el tamaño de la imagen al 100% del contenedor */
+            width: 100%;
             height: auto;
+        }
+        .selector-container {
+            display: flex;
+            justify-content: center;
+            margin: 20px;
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000; /* Para asegurarte de que los botones estén sobre el mapa */
+        }
+        .selector-container button {
+            padding: 10px 20px;
+            border-radius: 20px;
+            border: 2px solid #ccc;
+            font-size: 16px;
+            background-color: white;
+            cursor: pointer;
+            margin: 0 5px;
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+        .selector-container button:hover {
+            background-color: #f0f0f0;
+        }
+        .selector-container button:focus,
+        .selector-container button.active {
+            border-color: #007BFF;
+            background-color: #007BFF;
+            color: white;
         }
     </style>
 </head>
 <body>
+    <div class="selector-container">
+        <button id="btn-todos" onclick="filtrarPuntos('todos')">Todos</button>
+        <button id="btn-montana" onclick="filtrarPuntos('montana')">Montaña</button>
+        <button id="btn-playa" onclick="filtrarPuntos('playa')">Playa</button>
+    </div>
     <div id="map"></div>
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script>
-        // Inicializar el mapa y establecer la vista a un lugar específico y nivel de zoom
-        var map = L.map("map").setView([28.681581840265412, -17.85336086554328], 10); // Coordenadas de Santa Cruz de La Palma
+        var map = L.map("map").setView([28.681581840265412, -17.85336086554328], 10);
 
-        // Añadir un tile layer (capa de teselas) al mapa
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
             attribution: "© OpenStreetMap contributors"
         }).addTo(map);
 
-        // Datos de los lugares con imágenes
-        var lugares = [
+        var iconoEstandar = L.icon({
+            iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+            iconSize: [25, 38],
+            iconAnchor: [19, 38],
+            popupAnchor: [0, -38]
+        });
+
+        var iconoFavorito = L.icon({
+            iconUrl: "https://cdn-icons-png.flaticon.com/512/4208/4208408.png",
+            iconSize: [38, 38],
+            iconAnchor: [19, 38],
+            popupAnchor: [0, -38]
+        });
+
+        var iconoCasa = L.icon({
+            iconUrl: "https://images.vexels.com/content/140565/preview/house-round-icon-1a6c6a.png",
+            iconSize: [38, 38],
+            iconAnchor: [19, 38],
+            popupAnchor: [0, -38]
+        });
+
+        var todosLosLugares = [
         {
           coordenadas: [28.7378, -17.867],
           nombre: "Parque Nacional de la Caldera de Taburiente",
           tiempo: "Tiempo estimado: 1h 50 minutos",
+          tipo: "montana",
           imagen:
             "https://upload.wikimedia.org/wikipedia/commons/e/e3/Caldera_de_Taburiente_MichaD.jpg",
           ubicacion:
@@ -47,6 +101,7 @@
           coordenadas: [28.6835, -17.7645],
           nombre: "Santa Cruz de La Palma",
           tiempo: "Tiempo estimado: 45 minutos",
+          tipo: "",
           imagen:
             "https://www.spain.info/.content/imagenes/cabeceras-grandes/canarias/santa-cruz-la-palma-balcones-s1322773256.jpg",
           ubicacion:
@@ -55,6 +110,7 @@
         {
           coordenadas: [28.757403248353363, -17.884974575291547],
           nombre: "Observatorio del Roque de los Muchachos ⭐️",
+          tipo: "montana",
           tiempo: "Tiempo estimado: 2 horas",
           imagen:
             "https://fotografias.lasexta.com/clipping/cmsimages02/2021/04/12/BD9CA878-C4D2-4366-B36B-113C94FE0947/98.jpg?crop=5929,3336,x126,y0&width=1900&height=1069&optimize=high&format=webply",
@@ -65,6 +121,7 @@
           coordenadas: [28.754735076899976, -17.885007296858873],
           nombre: "Roque de los Muchachos",
           tiempo: "Tiempo estimado: 2 horas",
+          tipo: "montana",
           imagen:
             "https://www.islabonitatours.com/wp-content/uploads/2019/05/miradores-roque-muchachos-isla-bonita-tours.jpg",
           ubicacion:
@@ -74,6 +131,7 @@
           coordenadas: [28.650761268495994, -17.946389866332385],
           nombre: "Playa Puerto de Tazacorte ⭐️",
           tiempo: "Tiempo estimado: 50 minutos",
+          tipo: "playa",
           imagen:
             "https://visitlapalma.es/wp-content/uploads/2017/12/LaPalma_PlayaTazacorte_DominicDahncke.jpg",
           ubicacion:
@@ -83,8 +141,9 @@
           coordenadas: [28.790145545789652, -17.80197616782565],
           nombre: "Bosque de Los Tilos",
           tiempo: "Tiempo estimado: 1h 20 minutos",
+          tipo: "montana",
           imagen:
-            "https://visitlapalma.es/wp-content/uploads/2017/12/LaPalma_PaseoLaurisilva_DominicDahncke.jpg",
+            "https://www.holaislascanarias.com/sites/default/files/styles/16_9_desktop/public/resources/header_images/Cabecera-desktop-Bosque-de-Los-Tilos.jpg",
           ubicacion:
             "https://www.google.es/maps/dir//Punto+de+Informaci%C3%B3n+Ambiental+de+LOS+TILOS.,+C.+Los+Tilos,+s%2Fn,+38720+Los+Sauces,+Santa+Cruz+de+Tenerife/@28.7908931,-17.8023839,17z/data=!4m9!4m8!1m0!1m5!1m1!1s0xc6bef13919b0927:0x535150bdd5ec1d87!2m2!1d-17.8019811!2d28.7901057!3e0?hl=es&entry=ttu",
         },
@@ -92,6 +151,7 @@
           coordenadas: [28.759196515925247, -17.739468564445566],
           nombre: "Playa de Nogales ⭐️",
           tiempo: "Tiempo estimado: 1 hora",
+          tipo: "playa",
           imagen: "https://tvlapalma.com/adjuntos/fichero_1847_20161102.jpg",
           ubicacion:
             "https://www.google.es/maps/dir//Playa+de+Nogales/@28.7591812,-17.7804866,13z/data=!4m9!4m8!1m0!1m5!1m1!1s0xc6be8be4ae7888f:0xe37394734a1015d!2m2!1d-17.7392868!2d28.7591122!3e0?hl=es&entry=ttu",
@@ -100,6 +160,7 @@
           coordenadas: [28.808003329126326, -17.761598096610456],
           nombre: "Charco Azul ⭐️",
           tiempo: "Tiempo estimado: 1h 15 minutos",
+          tipo: "playa",
           imagen:
             "https://visitlapalma.es/wp-content/uploads/2017/12/LaPalma_PiscinasCharcoAzul-VanMarty.jpg",
           ubicacion:
@@ -109,8 +170,9 @@
           coordenadas: [28.8427300606333, -17.78942906647062],
           nombre: "Las piscinas de Fajana",
           tiempo: "Tiempo estimado: 1h 20 minutos",
+          tipo: "playa",
           imagen:
-            "https://lapalmaisland.com/wp-content/uploads/2023/04/Piscinas-la-Fajana.jpg",
+            "https://www.holaislascanarias.com/sites/default/files/styles/masonry_image/public/resources/resource_image/PH19726.jpg?itok=td-0DysL",
           ubicacion:
             "https://www.google.es/maps/dir//Piscinas+de+La+Fajana,+C.+la+Fajana,+3,+38726+La+Fajana,+Santa+Cruz+de+Tenerife/@28.8422421,-17.7903113,17.74z/data=!4m9!4m8!1m0!1m5!1m1!1s0xc6be46a8fc8888d:0x8966a9921d0f55de!2m2!1d-17.7896105!2d28.8427028!3e0?hl=es&entry=ttu",
         },
@@ -118,6 +180,7 @@
           coordenadas: [28.459067193907185, -17.85080277903192],
           nombre: "Playa Echentive",
           tiempo: "Tiempo estimado: 10 minutos",
+          tipo: "playa",
           imagen:
             "https://visitlapalma.es/wp-content/uploads/2017/12/LaPalma_Playa-de-Echentive_Dami%C3%A1nMart%C3%ADnBrito.jpg",
           ubicacion:
@@ -127,8 +190,9 @@
           coordenadas: [28.5724277094711, -17.89930206360605],
           nombre: "Playa el Charco Verde ⭐️",
           tiempo: "Tiempo estimado: 45 minutos",
+          tipo: "playa",
           imagen:
-            "https://astelus.com/wp-content/uploads/2024/04/playa-charco-verde-la-palma.jpg",
+            "https://www.holaislascanarias.com/sites/default/files/styles/masonry_image/public/resources/resource_image/Galeria-Charco-Verde-02_0.jpg?itok=YdGsKkFZ",
           ubicacion:
             "https://www.google.es/maps/dir//Playa+de+Charco+Verde,+38769,+Santa+Cruz+de+Tenerife/@28.5724957,-17.940501,13z/data=!4m9!4m8!1m0!1m5!1m1!1s0xc6b8cd61b92d5f9:0x425eb5c280d5f273!2m2!1d-17.8993012!2d28.5724265!3e0?hl=es&entry=ttu",
         },
@@ -136,8 +200,9 @@
           coordenadas: [28.70313727539299, -17.970328331819395],
           nombre: "Poris de Candelaria",
           tiempo: "Tiempo estimado: 1h 20 minutos",
+          tipo: "playa",
           imagen:
-            "https://estaticos-cdn.prensaiberica.es/clip/1ae2f0ef-06cd-4532-84d0-a01ab48fcf4b_source-aspect-ratio_default_0.jpg",
+            "https://www.holaislascanarias.com/sites/default/files/styles/16_9_desktop/public/resources/header_images/cabecera_Tijarafe-Por%C3%ADsDeCandelaria_desk.jpg?itok=I0k09UWa",
           ubicacion:
             "https://www.google.es/maps/dir//Mirador+de+Por%C3%ADs+de+Candelaria,+Unnamed+Road,+38780,+Santa+Cruz+de+Tenerife/@28.7025915,-17.9913568,15z/data=!4m9!4m8!1m0!1m5!1m1!1s0xc6bf76bd4752667:0x2dfd1ba63c8c52b1!2m2!1d-17.9723031!2d28.7025923!3e0?hl=es&entry=ttu",
         },
@@ -145,6 +210,7 @@
           coordenadas: [28.455990810391143, -17.84419971529027],
           nombre: "Faro de Fuencaliente",
           tiempo: "Tiempo estimado: 10 minutos",
+          tipo: "playa",
           imagen:
             "https://www.puentedemando.com/wp-content/uploads/2018/10/13323585_1793111677590060_7990820982309923659_o.jpg",
           ubicacion:
@@ -154,8 +220,9 @@
           coordenadas: [28.572721111219288, -17.837558502859707],
           nombre: "Parque natural de Cumbre Vieja",
           tiempo: "Tiempo estimado: 1h 10 minutos",
+          tipo: "montana",
           imagen:
-            "https://www.holaislascanarias.com/sites/default/files/styles/16_9_desktop/public/resources/header_images/Cabecera-desktop-Parque-Natural-de-Cumbre-Vieja.jpg?itok=rSggp8uV",
+            "https://visitlapalma.es/wp-content/uploads/2017/12/LaPalma_Senderismo2_Sa%C3%BAlSantos.jpg",
           ubicacion:
             "https://www.google.es/maps/dir//Parque+natural+de+Cumbre+Vieja,+38738,+Santa+Cruz+de+Tenerife/@28.5730325,-17.8446186,15.48z/data=!4m9!4m8!1m0!1m5!1m1!1s0xc6b92b8fdc9c681:0xc8895edaecd1d4d1!2m2!1d-17.8375!2d28.5727778!3e0?hl=es&entry=ttu",
         },
@@ -163,8 +230,9 @@
           coordenadas: [28.697894262616863, -17.852590422379357],
           nombre: "Mirador de la Cumbrecita ⭐️",
           tiempo: "Tiempo estimado: 1 hora",
+          tipo: "montana",
           imagen:
-            "https://visitlapalma.es/wp-content/uploads/2017/12/LaPalma_Senderismo2_Sa%C3%BAlSantos.jpg",
+            "https://www.ilapalma.net/media/header/mirador-de-la-cumbrecita.webp",
           ubicacion:
             "https://www.google.es/maps/dir//Mirador+de+La+Cumbrecita,+Carr.+Caldera+Taburiente,+38758+El+Paso,+Santa+Cruz+de+Tenerife/@28.6979696,-17.8977374,13z/data=!4m9!4m8!1m0!1m5!1m1!1s0xc6bee2023ff5a5b:0xb5aa5ac18ded291f!2m2!1d-17.8565376!2d28.6979005!3e0?hl=es&entry=ttu",
         },
@@ -172,6 +240,7 @@
           coordenadas: [28.65264499293202, -17.760379052920214],
           nombre: "Playa de Los Cancajos",
           tiempo: "Tiempo estimado: 40 minutos",
+          tipo: "playa",
           imagen:
             "https://visitlapalma.es/wp-content/uploads/2017/12/LaPalma_PlayaLosCancajos-SSantos.jpg",
           ubicacion:
@@ -181,57 +250,68 @@
           coordenadas: [28.503700342989372, -17.873764637217178],
           nombre: "Hotel La Palma & Teneguía Princess",
           tiempo: " ",
+          tipo: " ",
           imagen: "https://i.assetzen.net/i/vahdjbUGgrif/w:630/h:305/q:70.jpg",
           ubicacion:
             "https://www.google.es/maps/dir//La+Palma+Princess,+Ctra.+la+Costa+Cerca+Vieja,+10,+38740,+Santa+Cruz+de+Tenerife/@28.5035165,-17.8767365,17z/data=!4m9!4m8!1m0!1m5!1m1!1s0xc6b8de5e5fc284d:0xbf5136a339a12c09!2m2!1d-17.8741616!2d28.5035118!3e0?entry=ttu",
         },
+        {
+          coordenadas: [28.515341694642235, -17.874967807707364],
+          nombre: "Playa de la Zamora",
+          tiempo: "Tiempo estimado: 5 minutos",
+          tipo: "playa",
+          imagen: "https://assets.la-palma.travel/uploads/2015/07/fuencaliente-playa-zamora-strand.jpg",
+          ubicacion:
+            "https://www.google.es/maps/dir//Playa+y+Bajas+de+la+Zamora,+38749/@28.5154082,-17.9161553,13z/data=!4m9!4m8!1m0!1m5!1m1!1s0xc6b8dbfd902c979:0x7976672c612329f8!2m2!1d-17.8749555!2d28.515339!3e0?entry=ttu",
+        },
         ];
 
-        // Crear el icono estándar
-        var iconoEstandar = L.icon({
-            iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png", // URL de tu icono estándar
-            iconSize: [25, 40], // Tamaño del icono
-            iconAnchor: [19, 38], // Punto del icono que corresponderá a la ubicación del marcador
-            popupAnchor: [0, -38] // Punto desde el cual se abrirá el popup relativo al icono
-        });
+        var markers = [];
 
-        // Crear el icono favorito
-        var iconoFavorito = L.icon({
-            iconUrl: "https://cdn-icons-png.flaticon.com/512/4208/4208408.png", // URL de tu icono favorito
-            iconSize: [38, 38], // Tamaño del icono
-            iconAnchor: [19, 38], // Punto del icono que corresponderá a la ubicación del marcador
-            popupAnchor: [0, -38] // Punto desde el cual se abrirá el popup relativo al icono
-        });
+        function agregarMarcadores(filtro) {
+            markers.forEach(marker => map.removeLayer(marker));
+            markers = [];
 
-        // Crear el icono para "Hotel La Palma & Teneguía Princess"
-        var iconoCasa = L.icon({
-            iconUrl: "https://images.vexels.com/content/140565/preview/house-round-icon-1a6c6a.png",
-            iconSize: [38, 38], // Tamaño del icono
-            iconAnchor: [19, 38], // Punto del icono que corresponderá a la ubicación del marcador
-            popupAnchor: [0, -38] // Punto desde el cual se abrirá el popup relativo al icono
-        });
+            var lugaresFiltrados = todosLosLugares.filter(lugar => {
+                return filtro === "todos" || lugar.tipo === filtro;
+            });
 
-        // Agregar marcadores al mapa
-        lugares.forEach(function (lugar) {
-            var markerOptions = {};
+            lugaresFiltrados.forEach(function (lugar) {
+                var markerOptions = {};
 
-            if (lugar.nombre === "Hotel La Palma & Teneguía Princess") {
-                markerOptions.icon = iconoCasa;
-            } else if (lugar.nombre.includes("⭐️")) {
-                markerOptions.icon = iconoFavorito;
-            } else {
-                markerOptions.icon = iconoEstandar;
-            }
+                if (lugar.nombre === "Hotel La Palma & Teneguía Princess") {
+                    markerOptions.icon = iconoCasa;
+                } else if (lugar.nombre.includes("⭐️")) {
+                    markerOptions.icon = iconoFavorito;
+                } else {
+                    markerOptions.icon = iconoEstandar;
+                }
 
-            var marker = L.marker(lugar.coordenadas, markerOptions).addTo(map);
-            var popupContent =
-                "<b>" + lugar.nombre + "</b><br><br>" +
-                '<img src="' + lugar.imagen + '" class="popup-image" alt="' + lugar.nombre + '"><br><br>' +
-                '<a href="' + lugar.ubicacion + '" target="_blank">Como llegar!</a>'+
-                "<p>" + lugar.tiempo + "<p>";
+                var marker = L.marker(lugar.coordenadas, markerOptions).addTo(map);
+                var popupContent =
+                    "<b>" + lugar.nombre + "</b><br><br>" +
+                    '<img src="' + lugar.imagen + '" class="popup-image" alt="' + lugar.nombre + '"><br><br>' +
+                    '<a href="' + lugar.ubicacion + '" target="_blank">Como llegar!</a>';
+                marker.bindPopup(popupContent, { maxWidth: 500 });
 
-            marker.bindPopup(popupContent, { maxWidth: 500 }); // Ajusta el tamaño máximo del pop-up
-        });
+                markers.push(marker);
+            });
+        }
+
+        function filtrarPuntos(filtro) {
+            var botones = document.querySelectorAll('.selector-container button');
+            botones.forEach(function (boton) {
+                boton.classList.remove('active');
+            });
+
+            var botonSeleccionado = document.getElementById('btn-' + filtro);
+            botonSeleccionado.classList.add('active');
+
+            agregarMarcadores(filtro);
+        }
+
+        // Inicializa los marcadores con "todos"
+        filtrarPuntos('todos');
     </script>
 </body>
 </html>
