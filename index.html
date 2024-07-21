@@ -291,7 +291,8 @@
                 var popupContent =
                     "<b>" + lugar.nombre + "</b><br><br>" +
                     '<img src="' + lugar.imagen + '" class="popup-image" alt="' + lugar.nombre + '"><br><br>' +
-                    '<a href="' + lugar.ubicacion + '" target="_blank">Como llegar!</a>';
+                    '<a href="' + lugar.ubicacion + '" target="_blank">Como llegar!</a>' +
+                    "<p>" + lugar.tiempo + "</p>";
                 marker.bindPopup(popupContent, { maxWidth: 500 });
 
                 markers.push(marker);
