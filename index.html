@@ -55,6 +55,7 @@
         <button id="btn-todos" onclick="filtrarPuntos('todos')">Todos</button>
         <button id="btn-montana" onclick="filtrarPuntos('montana')">Montaña</button>
         <button id="btn-playa" onclick="filtrarPuntos('playa')">Playa</button>
+        <button id="btn-random" onclick="mostrarUbicacionAleatoria()">Random</button>
     </div>
     <div id="map"></div>
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -311,9 +312,18 @@
             agregarMarcadores(filtro);
         }
 
+        function mostrarUbicacionAleatoria() {
+            var randomLugar = todosLosLugares[Math.floor(Math.random() * todosLosLugares.length)];
+            map.setView(randomLugar.coordenadas, 14);
+            markers.forEach(marker => {
+                if (marker.getLatLng().lat === randomLugar.coordenadas[0] && marker.getLatLng().lng === randomLugar.coordenadas[1]) {
+                    marker.openPopup();
+                }
+            });
+        }
+
         // Inicializa los marcadores con "todos"
         filtrarPuntos('todos');
     </script>
 </body>
 </html>
-
